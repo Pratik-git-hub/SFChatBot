@@ -12,7 +12,6 @@ from functools import wraps
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
-import jwt
 
 # LangChain imports
 from langchain_classic.memory import ConversationBufferMemory
