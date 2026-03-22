@@ -1,0 +1,8 @@
+langchain
+python-dotenv
+langchain-classic
+flask
+flask_CORS
+langchain-openai
+langchain_core
+awsgi2
