@@ -1,0 +1,238 @@
+<template>
+    <div class="ai-portal">
+
+        <!-- ═══ HEADER ═══ -->
+        <header class="portal-header">
+
+            <div class="header-left">
+                <div class="logo-mark">
+                    <span class="logo-icon">◈</span>
+                    <span class="logo-text">ARIA</span>
+                    <span class="logo-sub">AI Assistant Portal</span>
+                </div>
+            </div>
+
+            <div class="header-center">
+                <div class="tab-bar">
+
+                    <!-- Existing window tabs -->
+                    <template for:each={chatWindows} for:item="win">
+                        <button key={win.id}
+                            class={win.tabClass}
+                            data-id={win.id}
+                            onclick={handleTabClick}>
+                            <span class={win.tabDotClass}></span>
+                            <span class="tab-label">{win.name}</span>
+                            <template if:true={win.hasUnread}>
+                                <span class="unread-badge">{win.unread}</span>
+                            </template>
+                            <template if:true={win.isCloseable}>
+                                <button class="tab-close"
+                                    data-id={win.id}
+                                    onclick={handleCloseWindow}>✕</button>
+                            </template>
+                        </button>
+                    </template>
+
+                    <!-- Add-tab button + dropdown (always in DOM) -->
+                    <div class="add-tab-wrap" lwc:ref="addTabWrap">
+                        <button class={addTabBtnClass}
+                            disabled={allTabsOpen}
+                            title={addTabTitle}
+                            onclick={handleAddTabClick}>＋</button>
+
+                        <!-- Dropdown: shown/hidden via .open class in JS -->
+                        <div class="add-tab-dropdown" lwc:ref="addTabDropdown">
+                            <div class="dropdown-header">Open a new window</div>
+                            <template for:each={availableAgents} for:item="ag">
+                                <button key={ag.key}
+                                    class="dropdown-item"
+                                    data-key={ag.key}
+                                    onclick={handleAgentPick}>
+                                    <span class={ag.dotClass}></span>
+                                    <div>
+                                        <div class="di-name">{ag.name}</div>
+                                        <div class="di-role">{ag.role}</div>
+                                    </div>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="header-right">
+                <button class={layoutToggleClass} onclick={handleLayoutToggle}>
+                    {layoutIcon}
+                </button>
+                <div class="status-dot"></div>
+                <span class="status-text">Connected</span>
+            </div>
+
+        </header>
+
+        <!-- ═══ CHAT WINDOWS ═══ -->
+        <div class={mainAreaClass}>
+            <template for:each={visibleWindows} for:item="win">
+                <div key={win.id} class={win.windowClass} style={win.windowStyle}>
+
+                    <!-- Window header -->
+                    <div class="window-header">
+                        <div class="window-title-area">
+                            <div class="agent-avatar">
+                                <span>{win.agentInitial}</span>
+                            </div>
+                            <div class="agent-info">
+                                <span class="agent-name">{win.agentName}</span>
+                                <span class="agent-role">{win.agentRole}</span>
+                            </div>
+                        </div>
+                        <div class="window-controls">
+                            <div class={win.typingClass}>
+                                <span></span><span></span><span></span>
+                            </div>
+                            <button class="win-model-pill"
+                                data-id={win.id} data-action="model"
+                                onclick={handleWindowAction}>
+                                <span class="wmp-dot" style={win.modelDotStyle}></span>
+                                {win.modelName}
+                            </button>
+                            <button class="window-action"
+                                data-id={win.id} data-action="clear"
+                                onclick={handleWindowAction} title="Clear">↺</button>
+                            <button class="window-action"
+                                data-id={win.id} data-action="export"
+                                onclick={handleWindowAction} title="Export">↓</button>
+                        </div>
+                    </div>
+
+                    <!-- Messages -->
+                    <div class="messages-container" data-msgcontainer={win.id}>
+                        <template if:true={win.isEmpty}>
+                            <div class="empty-state">
+                                <div class="empty-icon">{win.emptyIcon}</div>
+                                <p class="empty-title">{win.emptyTitle}</p>
+                                <p class="empty-sub">{win.emptySub}</p>
+                                <div class="quick-prompts">
+                                    <template for:each={win.quickPrompts} for:item="qp">
+                                        <button key={qp.id}
+                                            class="quick-prompt-btn"
+                                            data-id={win.id}
+                                            data-prompt={qp.text}
+                                            onclick={handleQuickPrompt}>
+                                            {qp.text}
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+
+                        <template for:each={win.messages} for:item="msg">
+                            <div key={msg.id} class={msg.messageClass}>
+                                <template if:false={msg.isUser}>
+                                    <div class="msg-avatar-sm">{win.agentInitial}</div>
+                                </template>
+                                <div class="msg-content-wrapper">
+                                    <div class={msg.bubbleClass}>
+                                        <template if:true={msg.isLoading}>
+                                            <div class="loading-dots">
+                                                <span></span><span></span><span></span>
+                                            </div>
+                                        </template>
+                                        <template if:false={msg.isLoading}>
+                                            <p class="msg-text">{msg.content}</p>
+                                        </template>
+                                    </div>
+                                    <span class="msg-time">{msg.time}</span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Input -->
+                    <div class="input-area">
+                        <div class="input-wrapper">
+                            <textarea
+                                class="chat-input"
+                                placeholder={win.placeholder}
+                                data-id={win.id}
+                                onkeydown={handleKeyDown}
+                                oninput={handleInput}
+                                rows="1"></textarea>
+                            <div class="input-actions">
+                                <button class="attach-btn">⊕</button>
+                                <button class="send-btn"
+                                    data-id={win.id}
+                                    onclick={handleSend}>➤</button>
+                            </div>
+                        </div>
+                        <div class="input-meta">
+                            <button class="model-badge"
+                                data-id={win.id} data-action="model"
+                                onclick={handleWindowAction}>
+                                <span class="model-badge-dot" style={win.modelDotStyle}></span>
+                                LangChain · {win.modelName}
+                            </button>
+                            <span class="char-count">{win.charCount}</span>
+                        </div>
+                    </div>
+
+                </div>
+            </template>
+        </div>
+
+        <!-- ═══ MODEL MODAL ═══ -->
+        <template if:true={showModal}>
+            <div class="modal-overlay" onclick={handleModalOverlayClick}>
+                <div class="model-modal">
+                    <div class="modal-header">
+                        <div>
+                            <div class="modal-title">Select LLM Model</div>
+                            <div class="modal-sub">{modalSubtitle}</div>
+                        </div>
+                        <button class="modal-close-btn" onclick={handleModalClose}>✕</button>
+                    </div>
+                    <div class="modal-body">
+                        <template for:each={modalModels} for:item="grp">
+                            <div key={grp.id}>
+                                <div class="ms-group-lbl">{grp.provider}</div>
+                                <template for:each={grp.models} for:item="m">
+                                    <button key={m.id} class={m.itemClass}
+                                        data-model-id={m.id}
+                                        onclick={handleModalModelSelect}>
+                                        <div class="mm-icon" style={m.iconStyle}>{m.icon}</div>
+                                        <div class="mm-info">
+                                            <div class="mm-name">{m.name}</div>
+                                            <div class="mm-desc">{m.desc}</div>
+                                            <div class="mm-tags">
+                                                <template for:each={m.tagObjects} for:item="t">
+                                                    <span key={t.id} class={t.cls}>{t.label}</span>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        <span class="mm-check">✓</span>
+                                    </button>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="modal-footer">
+                        <div class="scope-row">
+                            <span class="scope-lbl">Apply to:</span>
+                            <button class={scopeThisClass} onclick={handleScopeThis}>This window</button>
+                            <button class={scopeAllClass}  onclick={handleScopeAll}>All windows</button>
+                        </div>
+                        <button class="apply-btn" onclick={handleModalApply}>Apply Model</button>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- ═══ TOAST ═══ -->
+        <template if:true={showToast}>
+            <div class={toastClass}>{toastMsg}</div>
+        </template>
+
+    </div>
+</template>
